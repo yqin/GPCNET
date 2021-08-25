@@ -349,6 +349,7 @@ int allreduce_buffers(CommConfig_t *config, MPI_Comm comm)
 
 int print_results(CommConfig_t *config, int localrank, int havedata, int from_min, char *name, char *units, CommResults_t * results)
 {
+#ifndef CONGESTOR_ONLY
      if (havedata && localrank == 0) {
           double avgworst = results->avgmin;
           if (from_min) avgworst = results->avgmax;
@@ -362,20 +363,19 @@ int print_results(CommConfig_t *config, int localrank, int havedata, int from_mi
 #endif
      }
 
-#ifndef CONGESTOR_ONLY
      /* if we are not comm_world rank 0 and we have forward it to comm_world rank 0 */
      if (localrank == 0 && havedata && config->myrank != 0 ) {
           mpi_error(MPI_Send(print_buffer, TBLSIZE, MPI_CHAR, 0, 511, MPI_COMM_WORLD));
      } else if (config->myrank == 0 && (localrank != 0 || ! havedata)) {
           mpi_error(MPI_Recv(print_buffer, TBLSIZE, MPI_CHAR, MPI_ANY_SOURCE, 511, MPI_COMM_WORLD, MPI_STATUS_IGNORE));
      }
-#endif
 
      if (config->myrank == 0) {
           printf("%s\n", print_buffer);
           printf("%s\n", table_innerbar);
           fflush(stdout);
      }
+#endif
 
      return 0;
 }
