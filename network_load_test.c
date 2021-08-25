@@ -59,7 +59,15 @@
 #define BCAST_TESTS 256
 #define BCAST_BASELINE_ITERS 512
 
-#define CONGESTOR_NODE_FRAC 0.8
+/* congestor only mode will turn this into an infinite congestor and no normal
+ * test will be performed, need to compile with -DCONGESTOR_ONLY to activate
+ * congestor only mode
+ */
+#ifdef CONGESTOR_ONLY
+    #define CONGESTOR_NODE_FRAC 1.0
+#else
+    #define CONGESTOR_NODE_FRAC 0.8
+#endif
 
 CommTest_t network_tests_list[NUM_NETWORK_TESTS], congestor_tests_list[NUM_CONGESTOR_TESTS];
 
@@ -432,15 +440,18 @@ int run_congestor_tests(CommConfig_t *config, int nntwk_tests, int congestor_set
                /* only measure the performance on the first iteration */
                measure_perf = (iteration == 0) ? 1 : 0;
 
+#ifndef CONGESTOR_ONLY
                /* if we have done a warmup iteration, let's complete the ibarrier
                   that releases the network tests to start */
                if (iteration == 1) {
                     mpi_error(MPI_Wait(&req, MPI_STATUS_IGNORE));
                }
+#endif
 
                congestor(config, ntests, niters, congestor_comm, congestor_tests_list[ctest], measure_perf,
                          congestor_perf.perf_hires, &congestor_perf.perf, &real_ntests);
 
+#ifndef CONGESTOR_ONLY
                /* we have done a non-warmup test so we can start our ibarrier */
                if (iteration == 1) {
                     mpi_error(MPI_Ibarrier(global_comm, &req));
@@ -475,6 +486,8 @@ int run_congestor_tests(CommConfig_t *config, int nntwk_tests, int congestor_set
                if (iteration == 0) {
                     mpi_error(MPI_Ibarrier(global_comm, &req));
                }
+#endif
+
                iteration++;
           }
 
@@ -532,7 +545,11 @@ int build_subcomms(int ncongestor_tests, CommConfig_t *config, CommNodes_t *node
      *nt_nodes        = ntest_nodes;
      *nc_nodes        = ncongestor_nodes;
 
+#ifndef CONGESTOR_ONLY
      if (ntest_nodes < 2 || ncongestor_nodes < 2*NUM_CONGESTOR_TESTS) {
+#else
+     if (ncongestor_nodes < 2*NUM_CONGESTOR_TESTS) {
+#endif
           if (config->myrank == 0) {
                printf("ERROR: this application must be run on at least %i nodes\n",2+(2*NUM_CONGESTOR_TESTS));
           }
