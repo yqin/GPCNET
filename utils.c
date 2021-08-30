@@ -19,6 +19,13 @@
 #include <string.h>
 #include <network_test.h>
 
+/* define the default bucket size for distribution/histogram analysis, need to
+ * build with 'make load CC=mpicc CFLAGS="-DDIST_BUCKETS=100 -DVERBOSE"'
+ */
+#ifndef DIST_BUCKETS
+#define DIST_BUCKETS 100
+#endif
+
 /* these establish the size of the table written to STDOUT */
 #ifdef VERBOSE
 #define TBLSIZE 140
@@ -513,7 +520,7 @@ int summarize_performance(CommConfig_t *config, double *myperf_vals_hires, doubl
      mpi_error(MPI_Comm_size(comm, &nranks));
 
      /* manage the high resolution data first */
-     results->ndist_buckets = 100000;
+     results->ndist_buckets = DIST_BUCKETS;
      distribution = malloc(sizeof(double) * results->ndist_buckets);
      if (distribution == NULL) {
           die("Failed to allocate distribution in summarize_performance()\n");
