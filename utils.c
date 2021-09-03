@@ -945,7 +945,7 @@ int write_distribution(CommTest_t req_test, CommTest_t other_test, int isbaselin
      create_perf_filename(req_test, other_test, isbaseline, "dat", &fname);
 
      fp = fopen(fname, "w+");
-     fprintf(fp, "%22.22s%20.20s\n", " ", tname);
+     fprintf(fp, "%20.20s%40.40s\n", " ", tname);
      fprintf(fp, "%20.20s %20.20s %20.20s\n", "Bin", tunits, "count");
      for (i = 0; i < results->ndist_buckets; i++) {
           fprintf(fp, "%20i %20.5f %20lu\n", i, (results->dlow+i*results->dres), results->distribution[i]);
