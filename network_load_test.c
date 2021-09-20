@@ -23,7 +23,10 @@
 #define VERSION 1.3
 
 #define NUM_NETWORK_TESTS 3
+
+#ifndef NUM_CONGESTOR_TESTS
 #define NUM_CONGESTOR_TESTS 4
+#endif
 
 /* loop counts for the various tests */
 #define NUM_LAT_TESTS 10000
@@ -46,16 +49,20 @@
 #define ALLREDUCE_BASE_NODES 32
 
 /* tuning for congestor tests */
-#define A2A_MSG_COUNT 512
+#ifndef CONGESTOR_COUNT
+#define CONGESTOR_COUNT 512
+#endif
+
+#define A2A_MSG_COUNT CONGESTOR_COUNT
 #define A2A_TESTS 256
 #define A2A_BASELINE_ITERS 512
 #define ALLREDUCE_MSG_COUNT 819200
 #define ALLREDUCE_TESTS 256
 #define ALLREDUCE_BASELINE_ITERS 512
-#define INCAST_MSG_COUNT 512
+#define INCAST_MSG_COUNT CONGESTOR_COUNT
 #define INCAST_TESTS 256
 #define INCAST_BASELINE_ITERS 512
-#define BCAST_MSG_COUNT 512
+#define BCAST_MSG_COUNT CONGESTOR_COUNT
 #define BCAST_TESTS 256
 #define BCAST_BASELINE_ITERS 512
 
@@ -684,10 +691,10 @@ int main(int argc, char* argv[])
      network_tests_list[1] = P2P_NEIGHBORS;
      network_tests_list[2] = ALLREDUCE_LATENCY;
 
-     congestor_tests_list[0] = A2A_CONGESTOR;
+     congestor_tests_list[0] = RMA_INCAST_CONGESTOR;
      congestor_tests_list[1] = P2P_INCAST_CONGESTOR;
-     congestor_tests_list[2] = RMA_INCAST_CONGESTOR;
-     congestor_tests_list[3] = RMA_BCAST_CONGESTOR;
+     congestor_tests_list[2] = RMA_BCAST_CONGESTOR;
+     congestor_tests_list[3] = A2A_CONGESTOR;
 
      if (am_congestor) {
 
