@@ -25,7 +25,24 @@
 #define NUM_NETWORK_TESTS 3
 
 #ifndef NUM_CONGESTOR_TESTS
-#define NUM_CONGESTOR_TESTS 4
+    #define NUM_CONGESTOR_TESTS 4
+#endif
+
+/* congestor selection by position of ones */
+#ifndef CONGESTOR_TESTS
+    #if NUM_CONGESTOR_TESTS==1
+        #define CONGESTOR_TESTS 0x20 /* 0b100000 - select the first 1 */
+    #elif NUM_CONGESTOR_TESTS==2
+        #define CONGESTOR_TESTS 0x30 /* 0b110000 - select the first 2 */
+    #elif NUM_CONGESTOR_TESTS==3
+        #define CONGESTOR_TESTS 0x38 /* 0b111000 - select the first 3 */
+    #elif NUM_CONGESTOR_TESTS==4
+        #define CONGESTOR_TESTS 0x3c /* 0b111100 - select the first 4 */
+    #elif NUM_CONGESTOR_TESTS==5
+        #define CONGESTOR_TESTS 0x3e /* 0b111110 - select the first 5 */
+    #elif NUM_CONGESTOR_TESTS==6
+        #define CONGESTOR_TESTS 0x3f /* 0b111111 - select all 6 */
+    #endif
 #endif
 
 /* loop counts for the various tests */
@@ -76,6 +93,12 @@
     #define CONGESTOR_NODE_FRAC 0.8
 #endif
 
+int congestors[] = {RMA_INCAST_CONGESTOR,
+                    P2P_INCAST_CONGESTOR,
+                    RMA_BCAST_CONGESTOR,
+                    A2A_CONGESTOR,
+                    P2P_BCAST_CONGESTOR,
+                    ALLREDUCE_CONGESTOR};
 CommTest_t network_tests_list[NUM_NETWORK_TESTS], congestor_tests_list[NUM_CONGESTOR_TESTS];
 
 typedef struct CongestorResults_st {
@@ -666,6 +689,7 @@ int main(int argc, char* argv[])
      CommNodes_t nodes;
      MPI_Comm local_comm, test_comm, congestor_comm;
      int i, am_congestor, congestor_set, nt_nodes, nc_nodes;
+     int congestor_tests, num_congestor_tests, congestor_pos, total_congestors;
 
      init_mpi(&test_config, &nodes, &argc, &argv, BW_MSG_COUNT, BW_MSG_COUNT, A2A_MSG_COUNT,
               INCAST_MSG_COUNT, BCAST_MSG_COUNT, ALLREDUCE_MSG_COUNT, BW_OUTSTANDING);
@@ -691,10 +715,39 @@ int main(int argc, char* argv[])
      network_tests_list[1] = P2P_NEIGHBORS;
      network_tests_list[2] = ALLREDUCE_LATENCY;
 
+#if 0
      congestor_tests_list[0] = RMA_INCAST_CONGESTOR;
      congestor_tests_list[1] = P2P_INCAST_CONGESTOR;
      congestor_tests_list[2] = RMA_BCAST_CONGESTOR;
      congestor_tests_list[3] = A2A_CONGESTOR;
+     congestor_tests_list[4] = P2P_BCAST_CONGESTOR;
+     congestor_tests_list[5] = ALLREDUCE_CONGESTOR;
+#else
+     congestor_tests = CONGESTOR_TESTS;
+     num_congestor_tests = 0;
+     congestor_pos = 1;
+     total_congestors = sizeof(congestors) / sizeof(congestors[0]);
+
+     /* select congestors */
+     while (congestor_tests) {
+         if (congestor_tests & 1 == 1) {
+             congestor_tests_list[num_congestor_tests] =
+                 congestors[total_congestors - congestor_pos];
+             num_congestor_tests++;
+         }
+         congestor_tests = congestor_tests >> 1;
+         congestor_pos++;
+     }
+
+     if (num_congestor_tests != NUM_CONGESTOR_TESTS) {
+         if (test_config.myrank == 0) {
+             printf("ERROR: provided congestor set (%d) does not match number of congestors (%d)\n",
+                    num_congestor_tests, NUM_CONGESTOR_TESTS);
+         }
+         MPI_Finalize();
+         exit(1);
+     }
+#endif
 
      if (am_congestor) {
 
